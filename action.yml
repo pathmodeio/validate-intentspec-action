@@ -1,5 +1,5 @@
 name: 'Validate IntentSpec'
-description: 'Validate IntentSpec markdown files against the open standard'
+description: 'Validate IntentSpec — the portable handoff format for evidence-backed AI agent intent. Catches malformed specs, missing fields, and broken evidence anchors.'
 inputs:
   file:
     description: 'Path to the intent file'

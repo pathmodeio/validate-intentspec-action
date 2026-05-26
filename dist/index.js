@@ -11025,8 +11025,9 @@ module.exports = function(str) {
 
 /**
  * IntentSpec CLI
- * The Open Standard for Spec-Driven Development
- * v1.0.4
+ * Validate intent.md against the IntentSpec schema.
+ * https://intentspec.org
+ * v1.1.0
  */
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };

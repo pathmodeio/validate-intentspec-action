@@ -2,8 +2,9 @@
 
 /**
  * IntentSpec CLI
- * The Open Standard for Spec-Driven Development
- * v1.0.4
+ * Validate intent.md against the IntentSpec schema.
+ * https://intentspec.org
+ * v1.1.0
  */
 
 

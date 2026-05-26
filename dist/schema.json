@@ -2,7 +2,7 @@
     "$schema": "http://json-schema.org/draft-07/schema#",
     "$id": "https://intentspec.org/schema.json",
     "title": "IntentSpec",
-    "description": "A structured contract for AI Agent intent definition.",
+    "description": "A portable, evidence-backed format for AI agent intent. Carries both the contract (what the agent must do) and the judgment (the evidence behind it).",
     "type": "object",
     "required": [
         "id",
@@ -14,13 +14,6 @@
         "id": {
             "type": "string",
             "description": "Unique identifier for the intent specification."
-        },
-        "workspaceId": {
-            "type": "string"
-        },
-        "stageName": {
-            "type": "string",
-            "description": "Name of the journey stage this intent belongs to."
         },
         "status": {
             "type": "string",
@@ -95,6 +88,49 @@
                     "scenario",
                     "expectedBehavior"
                 ]
+            }
+        },
+        "evidence": {
+            "type": "array",
+            "description": "Source observations that informed this spec — quotes, friction, observations, metrics, or requests. Optional. When present, each item can anchor to specific spec sections via the 'anchors' field.",
+            "items": {
+                "type": "object",
+                "required": [
+                    "type",
+                    "excerpt"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "Stable identifier for cross-referencing (e.g., from a Pathmode workspace)."
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "friction",
+                            "quote",
+                            "observation",
+                            "metric",
+                            "request"
+                        ]
+                    },
+                    "source": {
+                        "type": "string",
+                        "description": "Where this came from — ticket ID, replay ID, interview transcript, dashboard URL."
+                    },
+                    "excerpt": {
+                        "type": "string",
+                        "description": "The actual observation, quote, or measurement."
+                    },
+                    "anchors": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "pattern": "^(objective|userGoal|outcome:[0-9]+|edgeCase:[0-9]+|constraint:[0-9]+|healthMetric:[0-9]+)$"
+                        },
+                        "description": "Spec sections this evidence backs. Use 'objective', 'userGoal', 'outcome:N', 'edgeCase:N', 'constraint:N', or 'healthMetric:N'."
+                    }
+                }
             }
         },
         "strategicAlignment": {
