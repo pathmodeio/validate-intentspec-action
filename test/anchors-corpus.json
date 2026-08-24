@@ -1,0 +1,111 @@
+{
+    "$comment": "Conformance corpus for IntentSpec anchor resolution. The schema's pattern check proves an anchor is well-formed; these cases pin what happens when a well-formed anchor points at a section that does not exist. Both the browser validator on intentspec.org and validate-intentspec-action run their own implementation against this file, so the two can never drift apart silently. Every spec here is schema-valid on purpose: anchor resolution only runs after the shape check passes.",
+    "version": 1,
+    "cases": [
+        {
+            "name": "every anchor kind resolves, including the last valid index",
+            "spec": {
+                "id": "corpus-resolves",
+                "status": "draft",
+                "objective": "An objective",
+                "userGoal": "A user goal",
+                "outcomes": ["first outcome", "second outcome"],
+                "constraints": ["a constraint"],
+                "edgeCases": [{ "scenario": "s", "expectedBehavior": "b" }],
+                "healthMetrics": ["a metric"],
+                "evidence": [
+                    {
+                        "type": "quote",
+                        "excerpt": "q",
+                        "anchors": ["objective", "userGoal", "outcome:1", "edgeCase:0", "constraint:0", "healthMetric:0"]
+                    }
+                ]
+            },
+            "expectedErrors": []
+        },
+        {
+            "name": "a spec with no evidence has nothing to resolve",
+            "spec": {
+                "id": "corpus-no-evidence",
+                "status": "draft",
+                "objective": "An objective",
+                "outcomes": ["one outcome"]
+            },
+            "expectedErrors": []
+        },
+        {
+            "name": "evidence without anchors is left alone",
+            "spec": {
+                "id": "corpus-no-anchors",
+                "status": "draft",
+                "objective": "An objective",
+                "outcomes": ["one outcome"],
+                "evidence": [{ "type": "metric", "excerpt": "37% drop-off" }]
+            },
+            "expectedErrors": []
+        },
+        {
+            "name": "an outcome index past the end does not resolve",
+            "spec": {
+                "id": "corpus-outcome-out-of-range",
+                "status": "draft",
+                "objective": "An objective",
+                "outcomes": ["only one outcome"],
+                "evidence": [{ "type": "metric", "excerpt": "37% drop-off", "anchors": ["outcome:3"] }]
+            },
+            "expectedErrors": [
+                "/evidence/0/anchors \"outcome:3\" does not resolve: this spec has 1 outcome entry"
+            ]
+        },
+        {
+            "name": "anchoring userGoal in a spec that has none does not resolve",
+            "spec": {
+                "id": "corpus-missing-usergoal",
+                "status": "draft",
+                "objective": "An objective",
+                "outcomes": ["one outcome"],
+                "evidence": [{ "type": "quote", "excerpt": "q", "anchors": ["userGoal"] }]
+            },
+            "expectedErrors": [
+                "/evidence/0/anchors \"userGoal\" targets a field that is not present in this spec"
+            ]
+        },
+        {
+            "name": "sections that are absent entirely count as zero entries",
+            "spec": {
+                "id": "corpus-absent-sections",
+                "status": "draft",
+                "objective": "An objective",
+                "outcomes": ["one outcome"],
+                "evidence": [
+                    {
+                        "type": "observation",
+                        "excerpt": "o",
+                        "anchors": ["edgeCase:0", "constraint:0", "healthMetric:0"]
+                    }
+                ]
+            },
+            "expectedErrors": [
+                "/evidence/0/anchors \"edgeCase:0\" does not resolve: this spec has 0 edgeCase entries",
+                "/evidence/0/anchors \"constraint:0\" does not resolve: this spec has 0 constraint entries",
+                "/evidence/0/anchors \"healthMetric:0\" does not resolve: this spec has 0 healthMetric entries"
+            ]
+        },
+        {
+            "name": "the error names the evidence item it came from",
+            "spec": {
+                "id": "corpus-evidence-index",
+                "status": "draft",
+                "objective": "An objective",
+                "outcomes": ["one outcome"],
+                "evidence": [
+                    { "type": "quote", "excerpt": "resolves", "anchors": ["outcome:0"] },
+                    { "type": "friction", "excerpt": "dangling", "anchors": ["outcome:5"] }
+                ]
+            },
+            "expectedErrors": [
+                "/evidence/1/anchors \"outcome:5\" does not resolve: this spec has 1 outcome entry"
+            ]
+        }
+    ]
+}

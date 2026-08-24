@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    # Weekly drift check: the schema and anchor corpus published at intentspec.org
+    # are the source of truth. If either changes without a matching release here,
+    # this run fails.
+    - cron: '23 6 * * 1'
+
+jobs:
+  # The shipped artifact is the committed bundle in dist/, so the build runs here
+  # and the diff must come back empty. Without this, an edit to src/ that was
+  # never rebuilt would pass CI while the action itself stayed on the old code.
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # ncc output is byte-stable for a given Node major, and the gate below is a
+      # byte comparison, so the build here must use the same major that produced
+      # the committed dist. .nvmrc is the one place that version lives.
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - run: npm ci
+      - run: npm run build
+      - name: dist/ is a current build of src/
+        run: git diff --exit-code dist/
+      - name: Tests (no network)
+        run: npm test
+        env:
+          SKIP_DRIFT: '1'
+
+  # Kept off pull_request on purpose: this job reaches out to intentspec.org, and
+  # a site outage should not fail somebody's PR.
+  drift:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - run: npm ci
+      - name: Tests + drift against intentspec.org
+        run: npm test

@@ -4,7 +4,7 @@
  * IntentSpec CLI
  * Validate intent.md against the IntentSpec schema.
  * https://intentspec.org
- * v1.1.0
+ * v1.2.0
  */
 
 
@@ -17,6 +17,40 @@ import Ajv from 'ajv';
 // import addFormats from 'ajv-formats';
 
 const program = new Command();
+
+// Anchors must resolve to sections that exist: outcome:3 in a two-outcome spec is
+// a broken reference even though it matches the schema's pattern. The site runs the
+// same logic in lib/intentspecAnchors.ts; test/anchors-corpus.json pins the verdicts
+// both sides must agree on.
+const resolveAnchorErrors = (data: any): string[] => {
+    const errors: string[] = [];
+    const evidence = Array.isArray(data.evidence) ? data.evidence : [];
+    const sectionLengths: Record<string, number> = {
+        outcome: Array.isArray(data.outcomes) ? data.outcomes.length : 0,
+        edgeCase: Array.isArray(data.edgeCases) ? data.edgeCases.length : 0,
+        constraint: Array.isArray(data.constraints) ? data.constraints.length : 0,
+        healthMetric: Array.isArray(data.healthMetrics) ? data.healthMetrics.length : 0,
+    };
+    evidence.forEach((item: any, i: number) => {
+        const anchors = Array.isArray(item?.anchors) ? item.anchors : [];
+        anchors.forEach((anchor: any) => {
+            if (typeof anchor !== 'string') return;
+            if (anchor === 'objective' || anchor === 'userGoal') {
+                if (!data[anchor]) {
+                    errors.push(`/evidence/${i}/anchors "${anchor}" targets a field that is not present in this spec`);
+                }
+                return;
+            }
+            const match = anchor.match(/^(outcome|edgeCase|constraint|healthMetric):(\d+)$/);
+            if (!match) return; // format itself is enforced by the schema
+            const [, section, index] = match;
+            if (Number(index) >= sectionLengths[section]) {
+                errors.push(`/evidence/${i}/anchors "${anchor}" does not resolve: this spec has ${sectionLengths[section]} ${section} entr${sectionLengths[section] === 1 ? 'y' : 'ies'}`);
+            }
+        });
+    });
+    return errors;
+};
 
 // Debugging: Log environment state (enabled for troubleshooting)
 console.log('[IntentSpec] Env Check:', {
@@ -55,6 +89,12 @@ const validateIntent = async (file: string) => {
         const valid = validate(data);
 
         if (valid) {
+            const anchorErrors = resolveAnchorErrors(data);
+            if (anchorErrors.length > 0) {
+                console.error(chalk.red(`❌ Invalid IntentSpec: ${file}`));
+                anchorErrors.forEach(err => console.error(chalk.yellow(`- ${err}`)));
+                process.exit(1);
+            }
             console.log(chalk.green(`✅ ${file} is a valid IntentSpec!`));
             process.exit(0);
         } else {

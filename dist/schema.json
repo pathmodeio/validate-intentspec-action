@@ -50,6 +50,7 @@
         },
         "outcomes": {
             "type": "array",
+            "minItems": 1,
             "items": {
                 "type": "string"
             },
@@ -61,6 +62,31 @@
                 "type": "string"
             },
             "description": "metrics that must not degrade."
+        },
+        "verification": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "description": "How the outcomes are confirmed — the fastest automated check, a manual fallback, and the observable signal once shipped. Added in v1.2."
+        },
+        "scope": {
+            "type": "object",
+            "description": "What the implementation may touch, and what it must leave alone. Added in v1.2.",
+            "properties": {
+                "inScope": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "outOfScope": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
         },
         "constraints": {
             "type": "array",

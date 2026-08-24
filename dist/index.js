@@ -11027,7 +11027,7 @@ module.exports = function(str) {
  * IntentSpec CLI
  * Validate intent.md against the IntentSpec schema.
  * https://intentspec.org
- * v1.1.0
+ * v1.2.0
  */
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -11041,6 +11041,41 @@ const gray_matter_1 = __importDefault(__nccwpck_require__(9599));
 const ajv_1 = __importDefault(__nccwpck_require__(2463));
 // import addFormats from 'ajv-formats';
 const program = new commander_1.Command();
+// Anchors must resolve to sections that exist: outcome:3 in a two-outcome spec is
+// a broken reference even though it matches the schema's pattern. The site runs the
+// same logic in lib/intentspecAnchors.ts; test/anchors-corpus.json pins the verdicts
+// both sides must agree on.
+const resolveAnchorErrors = (data) => {
+    const errors = [];
+    const evidence = Array.isArray(data.evidence) ? data.evidence : [];
+    const sectionLengths = {
+        outcome: Array.isArray(data.outcomes) ? data.outcomes.length : 0,
+        edgeCase: Array.isArray(data.edgeCases) ? data.edgeCases.length : 0,
+        constraint: Array.isArray(data.constraints) ? data.constraints.length : 0,
+        healthMetric: Array.isArray(data.healthMetrics) ? data.healthMetrics.length : 0,
+    };
+    evidence.forEach((item, i) => {
+        const anchors = Array.isArray(item?.anchors) ? item.anchors : [];
+        anchors.forEach((anchor) => {
+            if (typeof anchor !== 'string')
+                return;
+            if (anchor === 'objective' || anchor === 'userGoal') {
+                if (!data[anchor]) {
+                    errors.push(`/evidence/${i}/anchors "${anchor}" targets a field that is not present in this spec`);
+                }
+                return;
+            }
+            const match = anchor.match(/^(outcome|edgeCase|constraint|healthMetric):(\d+)$/);
+            if (!match)
+                return; // format itself is enforced by the schema
+            const [, section, index] = match;
+            if (Number(index) >= sectionLengths[section]) {
+                errors.push(`/evidence/${i}/anchors "${anchor}" does not resolve: this spec has ${sectionLengths[section]} ${section} entr${sectionLengths[section] === 1 ? 'y' : 'ies'}`);
+            }
+        });
+    });
+    return errors;
+};
 // Debugging: Log environment state (enabled for troubleshooting)
 console.log('[IntentSpec] Env Check:', {
     GITHUB_ACTIONS: process.env.GITHUB_ACTIONS,
@@ -11070,6 +11105,12 @@ const validateIntent = async (file) => {
         const validate = ajv.compile(schema);
         const valid = validate(data);
         if (valid) {
+            const anchorErrors = resolveAnchorErrors(data);
+            if (anchorErrors.length > 0) {
+                console.error(chalk_1.default.red(`❌ Invalid IntentSpec: ${file}`));
+                anchorErrors.forEach(err => console.error(chalk_1.default.yellow(`- ${err}`)));
+                process.exit(1);
+            }
             console.log(chalk_1.default.green(`✅ ${file} is a valid IntentSpec!`));
             process.exit(0);
         }
