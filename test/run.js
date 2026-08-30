@@ -10,7 +10,10 @@
  *    lib/intentspecAnchorsCorpus.test.ts, so the browser validator and this
  *    action cannot drift apart on anchor resolution without a test going red.
  * 3. Build freshness: src/schema.json must equal dist/schema.json.
- * 4. Drift (skipped when SKIP_DRIFT=1): src/schema.json and test/anchors-corpus.json
+ * 4. Drift + normalization corpus (skipped when SKIP_DRIFT=1): src/schema.json and
+ *    test/anchors-corpus.json must equal the copies published at intentspec.org, and the
+ *    normalization corpus is FETCHED from there rather than vendored, so a stale local copy
+ *    cannot pass forever. Old text follows: src/schema.json and test/anchors-corpus.json
  *    must equal the copies published at intentspec.org, which is the source of
  *    truth. CI runs this on a schedule, not on every PR, so a site outage cannot
  *    fail unrelated pull requests.
@@ -89,23 +92,8 @@ for (const { fixture, code, contains } of CASES) {
     pass(`${fixture} → exit ${code}`);
 }
 
-// --- 1b. Normalization corpus ------------------------------------------------
-// The same file the standards repo and the Pathmode parsers run. Accept/reject fixtures cannot
-// catch two implementations agreeing a document is valid while disagreeing about what it says,
-// which is the whole promise of "one format". Vendored from pathmodeio/intentspec; refresh both
-// this and src/normalize.ts from there.
-(() => {
-    const { project, diff } = require('./corpus-compare.mjs');
-    const corpus = require('./normalization-corpus.json');
-    const { normalizeMarkdown } = require('../dist/normalize-for-test.js');
-    for (const c of corpus.cases) {
-        const result = normalizeMarkdown(c.markdown, (y) => require('js-yaml').load(y));
-        if (!result.ok) { fail(`normalization: ${c.name} — did not parse: ${result.error}`); continue; }
-        const problems = diff(c.normalized, project(result.doc, corpus.comparedFields));
-        if (problems.length) fail(`normalization: ${c.name}\n    ${problems.join('\n    ')}`);
-        else pass(`normalization: ${c.name}`);
-    }
-})();
+// --- 1b. Normalization corpus (fetched, never vendored) ----------------------
+// Runs at the bottom with the other network checks; see runNormalizationCorpus().
 
 // --- 2. Anchor corpus -------------------------------------------------------
 
@@ -191,8 +179,35 @@ const DRIFT_CHECKS = [
     },
 ];
 
+/**
+ * The normalization corpus is FETCHED, not vendored.
+ *
+ * A copy in this repo would pass forever against whatever it was copied at, which is the exact
+ * staleness the corpus exists to prevent: it is the artifact holding four implementations of
+ * SPEC.md section 2 to one reading of a document, so a stale copy is worse than none. The
+ * comparison logic (corpus-compare.mjs) stays vendored and reviewed; only the DATA is fetched.
+ *
+ * A fetch failure is reported and skips these cases rather than passing silently, on the same
+ * reasoning as the drift check: a site outage must not look like conformance.
+ */
+const runNormalizationCorpus = () =>
+    fetchJson('https://intentspec.org/normalization-corpus.json')
+        .then((corpus) => {
+            const { project, diff } = require('./corpus-compare.mjs');
+            const { normalizeMarkdown } = require('../dist/normalize-for-test.js');
+            const yaml = require('js-yaml');
+            for (const c of corpus.cases) {
+                const result = normalizeMarkdown(c.markdown, (y) => yaml.load(y));
+                if (!result.ok) { fail(`normalization: ${c.name} — did not parse: ${result.error}`); continue; }
+                const problems = diff(c.normalized, project(result.doc, corpus.comparedFields));
+                if (problems.length) fail(`normalization: ${c.name}\n    ${problems.join('\n    ')}`);
+                else pass(`normalization: ${c.name}`);
+            }
+        })
+        .catch((e) => fail(`normalization corpus: ${e.message}`));
+
 if (process.env.SKIP_DRIFT === '1') {
-    console.log('- drift check skipped (SKIP_DRIFT=1)');
+    console.log('- drift check and normalization corpus skipped (SKIP_DRIFT=1)');
     finish();
 } else {
     Promise.all(
@@ -207,5 +222,7 @@ if (process.env.SKIP_DRIFT === '1') {
                 })
                 .catch((e) => fail(e.message))
         )
-    ).then(finish);
+    )
+        .then(runNormalizationCorpus)
+        .then(finish);
 }
