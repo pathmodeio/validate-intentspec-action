@@ -22,7 +22,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Validate Intent Spec
-        uses: JanneL/validate-intentspec-action@v1
+        uses: pathmodeio/validate-intentspec-action@v1
         with:
           file: 'intent.md' # Optional (default: intent.md)
 ```
