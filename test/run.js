@@ -89,6 +89,24 @@ for (const { fixture, code, contains } of CASES) {
     pass(`${fixture} → exit ${code}`);
 }
 
+// --- 1b. Normalization corpus ------------------------------------------------
+// The same file the standards repo and the Pathmode parsers run. Accept/reject fixtures cannot
+// catch two implementations agreeing a document is valid while disagreeing about what it says,
+// which is the whole promise of "one format". Vendored from pathmodeio/intentspec; refresh both
+// this and src/normalize.ts from there.
+(() => {
+    const { project, diff } = require('./corpus-compare.mjs');
+    const corpus = require('./normalization-corpus.json');
+    const { normalizeMarkdown } = require('../dist/normalize-for-test.js');
+    for (const c of corpus.cases) {
+        const result = normalizeMarkdown(c.markdown, (y) => require('js-yaml').load(y));
+        if (!result.ok) { fail(`normalization: ${c.name} — did not parse: ${result.error}`); continue; }
+        const problems = diff(c.normalized, project(result.doc, corpus.comparedFields));
+        if (problems.length) fail(`normalization: ${c.name}\n    ${problems.join('\n    ')}`);
+        else pass(`normalization: ${c.name}`);
+    }
+})();
+
 // --- 2. Anchor corpus -------------------------------------------------------
 
 const corpusPath = path.join(__dirname, 'anchors-corpus.json');

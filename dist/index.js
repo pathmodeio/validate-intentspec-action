@@ -10171,7 +10171,9 @@ function edgeCasesOf(sections) {
             out.push({ scenario: bold[1].trim(), expectedBehavior: bold[2].trim() });
             continue;
         }
-        const arrow = raw.match(/^(.+?)\s*(?:->|→)\s*(.+)$/);
+        // `:` is accepted too: the shipped Pathmode parsers have always taken it, and the corpus
+        // caught this reference disagreeing with them on 2026-08-30.
+        const arrow = raw.match(/^(.+?)\s*(?:->|→|:)\s*(.+)$/);
         if (arrow)
             out.push({ scenario: arrow[1].trim(), expectedBehavior: arrow[2].trim() });
         // An item with no expected behavior is not an edge case; it is dropped (SPEC.md 2).

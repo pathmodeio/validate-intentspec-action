@@ -1,0 +1,171 @@
+{
+  "$comment": "Markdown in, exact normalized object out. Every implementation of SPEC.md section 2 runs this same file and must produce these objects, so semantic parity is enforceable rather than conventional. Accept/reject fixtures cannot do this job: two parsers can agree that a document is valid while disagreeing about what it says. Implementations MAY model verification kinds richly, but section 2 requires flattening to the array form, so each runner projects its parser's output onto the fields below and compares deep-equal. Fields a parser adds beyond these (identifiers, source markers, internal state) are ignored.",
+  "specVersion": "v1.2",
+  "comparedFields": [
+    "title",
+    "objective",
+    "outcomes",
+    "constraints",
+    "edgeCases",
+    "healthMetrics",
+    "verification"
+  ],
+  "cases": [
+    {
+      "name": "scalar precedence: frontmatter objective wins over the section",
+      "why": "A scalar written in frontmatter is a declaration and must not be silently overridden by prose.",
+      "markdown": "---\nid: a\nstatus: draft\nobjective: from frontmatter\n---\n\n# Title A\n\n## Objective\n\nfrom the section\n",
+      "normalized": {
+        "title": "Title A",
+        "objective": "from frontmatter"
+      }
+    },
+    {
+      "name": "scalar fallback: the section is used when frontmatter has no objective",
+      "why": "The section is not decoration; it carries the field when frontmatter does not.",
+      "markdown": "---\nid: b\nstatus: draft\n---\n\n# Title B\n\n## Objective\n\nAnalysts re-filter the weekly export by hand every Monday.\n",
+      "normalized": {
+        "title": "Title B",
+        "objective": "Analysts re-filter the weekly export by hand every Monday."
+      }
+    },
+    {
+      "name": "list precedence: a non-empty section wins over the frontmatter array",
+      "why": "The readable list is the part a human edits; a stale frontmatter array must not win.",
+      "markdown": "---\nid: c\nstatus: draft\noutcomes:\n  - stale from frontmatter\n---\n\n# Title C\n\n## Outcomes\n\n- first from section\n- second from section\n",
+      "normalized": {
+        "title": "Title C",
+        "outcomes": [
+          "first from section",
+          "second from section"
+        ]
+      }
+    },
+    {
+      "name": "list fallback: a section with no list items does not override frontmatter",
+      "why": "Prose under a heading is not a list. Treating it as an empty list would silently erase the frontmatter.",
+      "markdown": "---\nid: d\nstatus: draft\noutcomes:\n  - kept from frontmatter\n---\n\n# Title D\n\n## Outcomes\n\nThis paragraph has no list items.\n",
+      "normalized": {
+        "title": "Title D",
+        "outcomes": [
+          "kept from frontmatter"
+        ]
+      }
+    },
+    {
+      "name": "title precedence: frontmatter title beats userGoal and the H1",
+      "why": "Three sources can name a document; the order has to be fixed or tools disagree about what it is called.",
+      "markdown": "---\nid: e\nstatus: draft\ntitle: from title\nuserGoal: from userGoal\n---\n\n# from the H1\n",
+      "normalized": {
+        "title": "from title"
+      }
+    },
+    {
+      "name": "title precedence: userGoal beats the H1 when title is absent",
+      "why": "",
+      "markdown": "---\nid: f\nstatus: draft\nuserGoal: from userGoal\n---\n\n# from the H1\n",
+      "normalized": {
+        "title": "from userGoal"
+      }
+    },
+    {
+      "name": "HTML comments are guidance, never content",
+      "why": "A template's instructional comment named actors and carried an empty scaffold past the objective gate. Comments are invisible when markdown renders, so a reader treating them as content reads what the author never wrote.",
+      "markdown": "---\nid: g\nstatus: draft\n---\n\n# Title G\n\n## Objective\n\n<!--\nWHO is affected and WHAT goes wrong for them today. A role, a team, an operator.\n-->\n\n## Outcomes\n\n<!-- one per line -->\n- a real outcome the author wrote\n",
+      "normalized": {
+        "title": "Title G",
+        "outcomes": [
+          "a real outcome the author wrote"
+        ]
+      }
+    },
+    {
+      "name": "fenced blocks are examples, never structure",
+      "why": "A `## ` inside a fence would open a bogus section, and a fenced list would become outcomes. Measured in the wild: one change contributed 21 Doxygen comment lines as outcomes.",
+      "markdown": "---\nid: h\nstatus: draft\n---\n\n# Title H\n\n## Outcomes\n\n- the only real outcome\n\n```md\n## Outcomes\n- not an outcome, this is an example\n```\n",
+      "normalized": {
+        "title": "Title H",
+        "outcomes": [
+          "the only real outcome"
+        ]
+      }
+    },
+    {
+      "name": "verification flattens to strings and drops its labels",
+      "why": "The schema defines no object form for verification. Labels are a readability affordance; consumers may keep kinds internally but must flatten before validating.",
+      "markdown": "---\nid: i\nstatus: draft\n---\n\n# Title I\n\n## Verification\n\n**Fastest check**:\n- [ ] Run the test suite, all green\n\n**Manual check**:\n- [ ] Force a failure in staging and confirm the retry fires\n",
+      "normalized": {
+        "title": "Title I",
+        "verification": [
+          "Run the test suite, all green",
+          "Force a failure in staging and confirm the retry fires"
+        ]
+      }
+    },
+    {
+      "name": "edge cases accept every documented pair form and drop items with no expected behavior",
+      "why": "A failure mode with no expected behavior is a worry, not an edge case. The four forms are pinned because the reference and the shipped parsers silently disagreed about ASCII `->` versus `:` until this corpus caught it.",
+      "markdown": "---\nid: j\nstatus: draft\n---\n\n# Title J\n\n## Edge Cases\n\n- **Credentials expired**: retry stops after one attempt\n- Disk full -> the run is marked needs-attention\n- Quota exceeded \u2192 the run is queued\n- Token rotated: the next run re-authenticates\n- Something vague with no expected behavior\n",
+      "normalized": {
+        "title": "Title J",
+        "edgeCases": [
+          {
+            "scenario": "Credentials expired",
+            "expectedBehavior": "retry stops after one attempt"
+          },
+          {
+            "scenario": "Disk full",
+            "expectedBehavior": "the run is marked needs-attention"
+          },
+          {
+            "scenario": "Quota exceeded",
+            "expectedBehavior": "the run is queued"
+          },
+          {
+            "scenario": "Token rotated",
+            "expectedBehavior": "the next run re-authenticates"
+          }
+        ]
+      }
+    },
+    {
+      "name": "checkbox markers carry no meaning for the model",
+      "why": "Authoring templates use checkboxes for progress; the model must not inherit them as text.",
+      "markdown": "---\nid: k\nstatus: draft\n---\n\n# Title K\n\n## Outcomes\n\n- [ ] unchecked outcome\n- [x] checked outcome\n* star bullet outcome\n",
+      "normalized": {
+        "title": "Title K",
+        "outcomes": [
+          "unchecked outcome",
+          "checked outcome",
+          "star bullet outcome"
+        ]
+      }
+    },
+    {
+      "name": "unknown sections are ignored, not errors",
+      "why": "Documents carry sections the format does not define, such as Evidence References. Consumers must not fail on them or absorb them.",
+      "markdown": "---\nid: l\nstatus: draft\n---\n\n# Title L\n\n## Evidence References\n\n- Ticket INT-4471 and its three linked duplicates\n\n## Outcomes\n\n- the real outcome\n",
+      "normalized": {
+        "title": "Title L",
+        "outcomes": [
+          "the real outcome"
+        ]
+      }
+    },
+    {
+      "name": "serialization A: frontmatter carries everything and the body is narrative",
+      "why": "The original serialization must keep working unchanged.",
+      "markdown": "---\nid: m\nstatus: validated\ntitle: Title M\nobjective: Everything lives in frontmatter here.\noutcomes:\n  - the frontmatter outcome\nconstraints:\n  - must never double-charge\n---\n\nFree-form narrative that contributes nothing to the model.\n",
+      "normalized": {
+        "title": "Title M",
+        "objective": "Everything lives in frontmatter here.",
+        "outcomes": [
+          "the frontmatter outcome"
+        ],
+        "constraints": [
+          "must never double-charge"
+        ]
+      }
+    }
+  ]
+}
