@@ -12,8 +12,9 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import fs from 'fs';
 import path from 'path';
-import matter from 'gray-matter';
+import { load as parseYaml } from 'js-yaml';
 import Ajv from 'ajv';
+import { normalizeMarkdown } from './normalize';
 // import addFormats from 'ajv-formats';
 
 const program = new Command();
@@ -52,12 +53,6 @@ const resolveAnchorErrors = (data: any): string[] => {
     return errors;
 };
 
-// Debugging: Log environment state (enabled for troubleshooting)
-console.log('[IntentSpec] Env Check:', {
-    GITHUB_ACTIONS: process.env.GITHUB_ACTIONS,
-    INPUT_FILE: process.env.INPUT_FILE
-});
-
 // Detect if running as GitHub Action (using truthiness check)
 const isGitHubAction = !!process.env.GITHUB_ACTIONS || !!process.env.INPUT_FILE;
 
@@ -75,7 +70,19 @@ const validateIntent = async (file: string) => {
 
     try {
         const content = fs.readFileSync(filePath, 'utf-8');
-        const { data } = matter(content);
+
+        // SPEC.md section 2: validation applies to the NORMALIZED object, not the file. Until
+        // v1.2.0 this read only the YAML frontmatter, so a conforming sectioned intent.md (the
+        // serialization real templates produce) was rejected for "missing" fields it visibly
+        // contained. The spec is explicit that a frontmatter-only validator is the defective
+        // party, and this Action was that validator.
+        const normalized = normalizeMarkdown(content, (y) => parseYaml(y));
+        if (!normalized.ok) {
+            console.error(chalk.red(`❌ Invalid IntentSpec: ${file}`));
+            console.error(chalk.yellow(`- ${normalized.error}`));
+            process.exit(1);
+        }
+        const data = normalized.doc;
 
         // Load Schema
         const schema = JSON.parse(fs.readFileSync(path.join(__dirname, 'schema.json'), 'utf-8'));

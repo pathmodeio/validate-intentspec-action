@@ -61,6 +61,15 @@ const runValidator = (file) => {
 const CASES = [
     { fixture: 'valid-v10.md', code: 0 },
     { fixture: 'valid-v12.md', code: 0 },
+    // SPEC.md section 1 defines two markdown serializations, and section 2 the normalization.
+    // valid-sectioned.md is the standards repo's conformance fixture built from the REAL
+    // pathmode-intent OpenSpec template: lists in ## sections, id/status in frontmatter. Until
+    // v1.2.0 this Action read frontmatter only and rejected it for "missing" fields it visibly
+    // contained. These three fixtures are vendored from pathmodeio/intentspec conformance/, which
+    // is what holds this Action and the reference normalizer in behavioral parity.
+    { fixture: 'valid-sectioned.md', code: 0 },
+    { fixture: 'invalid-sectioned-no-frontmatter.md', code: 1, contains: "required property 'id'" },
+    { fixture: 'invalid-broken-frontmatter.md', code: 1, contains: 'frontmatter is not valid YAML' },
     { fixture: 'invalid-missing-required.md', code: 1, contains: "required property 'outcomes'" },
     { fixture: 'invalid-empty-outcomes.md', code: 1, contains: 'fewer than 1 items' },
     { fixture: 'invalid-anchor-out-of-range.md', code: 1, contains: '"outcome:3" does not resolve' },
