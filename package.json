@@ -1,6 +1,6 @@
 {
   "name": "cli",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "GitHub Action that validates intent.md files against the IntentSpec schema.",
   "main": "dist/index.js",
   "bin": {
