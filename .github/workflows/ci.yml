@@ -33,6 +33,8 @@ jobs:
         run: npm test
         env:
           SKIP_DRIFT: '1'
+      - name: Validate this repository's intent.md
+        run: node dist/index.js validate intent.md
 
   # Kept off pull_request on purpose: this job reaches out to intentspec.org, and
   # a site outage should not fail somebody's PR.

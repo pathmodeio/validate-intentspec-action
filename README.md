@@ -4,6 +4,8 @@ The official GitHub Action for [IntentSpec](https://intentspec.org) — the port
 
 Validates that your `intent.md` adheres to the [IntentSpec Schema](https://intentspec.org/schema.json). Catches malformed specs, missing required fields, and typos in evidence anchors before they reach your main branch.
 
+This repository validates the same format it uses: [read its intent.md](intent.md).
+
 Supports IntentSpec **v1.2**, which adds the optional `scope` and `verification` fields, requires at least one outcome, and checks that evidence anchors resolve to sections that actually exist. The last two are new failure modes, so read [Upgrading to v1.2](#upgrading-to-v12) before you bump.
 
 ## Usage

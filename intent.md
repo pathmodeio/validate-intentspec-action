@@ -9,8 +9,8 @@ evidence:
     excerpt: "The action validates intent.md against the IntentSpec schema and resolves evidence anchors before merge."
     anchors: ["objective", "outcome:0"]
 outcomes:
-  - "A workflow can validate the repository's intent.md on push or pull request"
-  - "Malformed fields and unresolved evidence anchors produce a failing CI check"
+  - "100% of configured pushes and pull requests end with a visible passing or failing IntentSpec check in GitHub"
+  - "A malformed required field or unresolved evidence anchor exits with status 1 and produces zero false passes"
 constraints:
   - "The action must not require a Pathmode account or network access to validate the file"
   - "The committed dist artifact must remain synchronized with the source build"
