@@ -1,6 +1,6 @@
 {
   "name": "validate-intentspec-action",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "description": "GitHub Action that validates intent.md files against the IntentSpec schema.",
   "main": "dist/index.js",
   "bin": {
