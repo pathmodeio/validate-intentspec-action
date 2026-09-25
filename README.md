@@ -1,6 +1,6 @@
 # IntentSpec Validation Action
 
-The official GitHub Action for [IntentSpec](https://intentspec.org) — the portable handoff format for evidence-backed AI agent intent.
+The official GitHub Action for [IntentSpec](https://intentspec.org), the open format for product intent.
 
 Validates that your `intent.md` adheres to the [IntentSpec Schema](https://intentspec.org/schema.json). Catches malformed specs, missing required fields, and typos in evidence anchors before they reach your main branch.
 
@@ -53,10 +53,14 @@ jobs:
 
 ## Versions
 
-- `@v1` — floating tag, always points at the latest v1.x release. Use this unless you need to pin.
-- `@v1.2.0` — IntentSpec v1.2 (current). Adds `scope` + `verification` fields and anchor resolution.
+- `@v1` — floating tag, always points at the latest v1.x release (currently `v1.2.4`). Use this unless you need to pin.
+- `@v1.2.4` — IntentSpec v1.2, current. Runs on Node 24; validation identical to v1.2.3.
+- `@v1.2.1`–`@v1.2.3` — IntentSpec v1.2. Validate the normalized document, so a sectioned `intent.md` (lists under `##` headings) is read, not only its frontmatter. Tested against the published [normalization corpus](https://intentspec.org/normalization-corpus.json), so this Action reads a document the same way the other IntentSpec implementations do.
+- `@v1.2.0` — IntentSpec v1.2. Adds `scope` + `verification` fields and anchor resolution. Reads frontmatter only.
 - `@v1.1.0` — IntentSpec v1.1. Adds evidence field validation.
 - `@v1.0.8` — IntentSpec v1.0 (legacy). No evidence field validation.
+
+Full notes for each version are on the [releases page](https://github.com/pathmodeio/validate-intentspec-action/releases).
 
 ### Upgrading to v1.2
 
